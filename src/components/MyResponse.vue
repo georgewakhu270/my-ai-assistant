@@ -9,9 +9,8 @@ async function askCloud() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer api-key'
         },body: JSON.stringify({
-            model: 'llama3.1:70b',
+            model: 'gemma4:31b',
             messages: [{role: 'user', content: 'Why is the sky blue'}],
             stream: false
         })

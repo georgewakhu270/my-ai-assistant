@@ -6,26 +6,32 @@ export default {
                     headers: corsHeaders()
                 }
             )
-        }
-        const body = await request.text()
+        } try{
+            const body = await request.text()
 
-        const upstream = await fetch(
-            'https://ollama.com/api/chat',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${env.OLLAMA_API_KEY}`,
-                },
-                body,
+            const upstream = await fetch(
+                'https://ollama.com/api/chat',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${env.OLLAMA_API_KEY}`,
+                    },
+                    body,
+                })
+
+            const data = await upstream.text()
+
+            return new Response(data, {
+                status: upstream.status,
+                headers: {'Content-Type': 'application/json', ...corsHeaders()},
             })
-
-        const data = await upstream.text()
-
-        return new Response(data, {
-            status: upstream.status,
-            headers: {'Content-Type': 'application/json', ...corsHeaders()},
-        })
+        } catch (err) {
+            return new Response(JSON.stringify({error: err.message}), {
+                status: 500,
+                headers: {'Content-Type': 'application/json', ...corsHeaders()},
+            })
+        }
     }
 }
 
