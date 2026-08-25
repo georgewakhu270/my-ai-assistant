@@ -13,7 +13,7 @@ export default {
             'https://ollama.com/api/chat',
             {
                 method: 'POST',
-                header: {
+                headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${env.OLLAMA_API_KEY}`,
                 },
