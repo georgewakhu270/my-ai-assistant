@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import { marked } from 'marked';
 import markedKatex from 'marked-katex-extension';
 
@@ -10,6 +10,21 @@ const question = ref('')
 const loading = ref(false)
 const error = ref('')
 const selectedModel = ref('gemma4:31b')
+
+const response_notes = ref({
+    title: '',
+    items: [] as Array<{ question: string; response: string }>
+})
+
+const chatWindow = ref<HTMLElement | null>(null)
+
+const scrollToBottom = async function () {
+    await nextTick()
+    if (chatWindow.value) {
+        chatWindow.value.scrollTop = chatWindow.value.scrollHeight
+    }
+}
+
 
 const models = [
     { text: 'gemma4:31b', value: 'gemma4:31b' },
@@ -27,7 +42,7 @@ async function askCloud() {
     loading.value = true
     error.value = '';
     response.value = ''
-
+    await scrollToBottom()
     try {
         const res = await fetch('https://ollama-proxy.georgewakhu270.workers.dev/', {
             method: 'POST',
@@ -48,10 +63,21 @@ async function askCloud() {
 
         const data = await res.json();
         response.value = data.message.content;
+
+        if (response_notes.value.title === '') {
+            response_notes.value.title = question.value
+        }
+        response_notes.value.items.push({
+            'question': question.value,
+            'response': response.value
+        })
+        await scrollToBottom()
+        question.value = ''
     } catch (err) {
         error.value = err instanceof Error ? err.message : 'Something went wrong';
     } finally {
         loading.value = false;
+        await scrollToBottom()
     }
 }
 
@@ -79,7 +105,7 @@ const autoresize = function (event: Event) {
         </div>
         <div class="flex-1 flex flex-col justify-between h-full">
             <div class="flex-1 overflow-y-auto p-5 flex flex-col items-center" id="chatWindow">
-                <div
+                <div v-if="response_notes.items.length === 0 && !response"
                     class="w-full max-w-[768px] p-5 flex gap-5 leading-normal text-[15px] bg-[#2f2f2f] rounded-lg my-2.5">
                     <div
                         class="w-[30px] h-[30px] rounded-[2px] flex items-center justify-center font-bold text-xs shrink-0 bg-[#10a37f] text-white">
@@ -87,11 +113,28 @@ const autoresize = function (event: Event) {
                     </div>
                     <div class="flex-1 overflow-x-auto">Hello! How can I help you today</div>
                 </div>
-                <div v-if="response"
-                    class="w-full max-w-[768px] mt-6 bg-[#2f2f2f] p-5 rounded-2xl shadow-sm border border-[#424242]">
-                    <div class="markdown-body text-[#ececec] leading-relaxed" v-html="formattedResponse"></div>
-                </div>
-
+                <template v-for="(item, index) in response_notes.items" :key="index">
+                    <div class="w-full max-w-[768px] m-4 flex justify-end">
+                        <div
+                            class="max-w-[70%] bg-[#383838] px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed break-words">
+                            {{ item.question }}
+                        </div>
+                    </div>
+                    <div
+                        class="w-full max-w-[768px] p-5 flex gap-5 leading-normal text-[15px] bg-[#2f2f2f] rounded-2xl shadow-sm border border-[#424242]">
+                        <div
+                            class="w-[30px] h-[30px] rounded-[2px] flex items-center justify-center font-bold text-xs shrink-0 bg-[#10a37f] text-white">
+                            AI
+                        </div>
+                        <div class="flex-1 overflow-x-auto markdown-body text-[#ececec] leading-relaxed"
+                            v-html="marked.parse(item.response)">
+                        </div>
+                        <div v-if="error"
+                            class="w-full max-w-[768px] p-4 bg-red-950/40 border border-red-800 text-red-200 rounded-xl text-sm">
+                            {{ error }}
+                        </div>
+                    </div>
+                </template>
             </div>
             <div class="p-5 flex justify-center bg-gradient-to-t from-[#212121] via-[#212121]/80 to-transparent">
                 <div
@@ -101,10 +144,11 @@ const autoresize = function (event: Event) {
                             placeholder="Message me..."
                             class="flex-1 bg-transparent border-none text-[#ececec] resize-none outline-none max-h-[200px] text-[15px] leading-normal pt-1.5 placeholder-[#7f7f7f] disabled:cursor-not-allowed"
                             @input="autoresize">
-                        </textarea>
+            </textarea>
                         <select id="modelselect" v-model="selectedModel"
                             class="bg-transparent text-[#ececec] text-xs border-none outline-none cursor-pointer self-center px-1 py-1.5">
-                            <option v-for="option in models" :key="option.text" :value="option.value" class="bg-transparent text-[#ececec]">
+                            <option v-for="option in models" :key="option.text" :value="option.value"
+                                class="bg-transparent text-[#ececec]">
                                 {{ option.text }}
                             </option>
                         </select>
@@ -135,7 +179,6 @@ const autoresize = function (event: Event) {
 .markdown-body :deep(h3) {
     font-weight: 700;
     color: #ececec;
-    /* color: #0f172a; */
     margin-top: 1.5em;
     margin-bottom: 0.5em;
 }
@@ -181,13 +224,11 @@ const autoresize = function (event: Event) {
 }
 
 .markdown-body :deep(strong) {
-    /* color: #0f172a; */
     color: #ececec;
     font-weight: 600;
 }
 
 .markdown-body :deep(code) {
-    /* background-color: #f1f5f9; */
     color: #ececec;
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
