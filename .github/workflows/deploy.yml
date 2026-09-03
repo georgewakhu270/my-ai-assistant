@@ -32,6 +32,9 @@ jobs:
         with:
           python-version: "3.14"
           cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
         
       - name: Install dependencies
         run: npm install
