@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import MyResponse from './components/MyResponse.vue'
 import TestUI from './components/TestUI.vue';
-import Python from './components/Python.vue';
+import Summary from './components/Summary.vue';
 
-const sel_item = ref('python');
+const sel_item = ref('summary');
 
 const changeSelItem = (item: string) => {
   sel_item.value = item;
@@ -16,7 +16,7 @@ const changeSelItem = (item: string) => {
   <div>
     <button @click="changeSelItem('ai')">AI</button>
     <button @click="changeSelItem('test ui')">Test UI</button>
-    <button @click="changeSelItem('python')">Python</button>
+    <button @click="changeSelItem('summary')">Summary</button>
   </div>
   <div v-if="sel_item === 'ai'">
     <MyResponse />
@@ -24,7 +24,7 @@ const changeSelItem = (item: string) => {
   <div v-else-if="sel_item === 'test ui'">
     <TestUI />
   </div>
-  <div v-else-if="sel_item === 'python'">
-    <Python/>
+  <div v-else-if="sel_item === 'summary'">
+    <Summary/>
   </div>
 </template>
